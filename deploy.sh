@@ -10,7 +10,8 @@ DOMAIN_NAME="dev.mooviment.com" # replace with your own
 EMAIL="enol@mooviment.com" # replace with your own
 
 # Script Vars
-APP_DIR=~/wordpress
+REPO_URL="https://github.com/enolcasielles/basic-wordpress-deploy"
+APP_DIR=~/myapp
 SWAP_SIZE="1G"  # Swap size of 1GB
 
 # Update package list and upgrade existing packages
@@ -59,9 +60,31 @@ fi
 sudo systemctl enable docker
 sudo systemctl start docker
 
+# Clone or pull the repository
 if [ -d "$APP_DIR" ]; then
- # Remove folder
- sudo rm -rf $APP_DIR
+  echo "Directory $APP_DIR already exists. Pulling latest changes..."
+  cd $APP_DIR && git pull
+else
+  echo "Cloning repository from $REPO_URL..."
+  git clone $REPO_URL $APP_DIR
+  cd $APP_DIR
 fi
-mkdir $APP_DIR
+
+# Run Docker Compose
 cd $APP_DIR
+sudo docker-compose up --build -d
+
+# Check if Docker Compose started correctly
+if ! sudo docker-compose ps | grep "Up"; then
+  echo "Docker containers failed to start. Check logs with 'docker-compose logs'."
+  exit 1
+fi
+
+# Output final message
+echo "Deployment complete. Your application is now running at https://$DOMAIN_NAME, and the MySQL database is accessible from the web service.
+
+The .env file has been created with the following values:
+- MYSQL_ROOT_PASSWORD
+- MYSQL_DATABASE
+- MYSQL_USER
+- MYSQL_PASSWORD"
